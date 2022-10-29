@@ -24,6 +24,24 @@ def format_data_in_tuple(tuple_):
     return tuple(list_)
 
 
+def validate_range(min_, max_, range_upper_limit):
+    assert is_positive_integer(range_upper_limit)
+    limits_of_range = range(0, range_upper_limit + 1)
+    if not is_intvalue_in_range(min_, limits_of_range):
+        logging.error("The min value exceeds limit")
+        return
+    if max_ is not None and not is_intvalue_in_range(
+        max_, limits_of_range
+    ):
+        logging.error("The max value exceeds limit")
+        return
+    if max_ is None:
+        max_ = range_upper_limit
+    if min_ == max_:
+        return
+    return min_, max_
+
+
 class Work_Book:
     def __init__(self, path):
         self.path = path
@@ -69,23 +87,6 @@ class TableRanges(WorkSheet):
         super().__init__(path, worksheet_name)
         self.worksheet = self.read_worksheet()
 
-    def validate_range(self, min_, max_, range_upper_limit):
-        assert is_positive_integer(range_upper_limit)
-        limits_of_range = range(0, range_upper_limit + 1)
-        if not is_intvalue_in_range(min_, limits_of_range):
-            logging.error("The min value exceeds limit")
-            return
-        if max_ is not None and not is_intvalue_in_range(
-            max_, limits_of_range
-        ):
-            logging.error("The max value exceeds limit")
-            return
-        if max_ is None:
-            max_ = range_upper_limit
-        if min_ == max_:
-            return
-        return min_, max_
-
     def get_row_col_ranges(self):
         if not self.row_col_ranges_dict:
             self.row_col_ranges_dict["min_row"] = 0
@@ -95,7 +96,7 @@ class TableRanges(WorkSheet):
 
     def validate_row_col_ranges(self):
         self.get_row_col_ranges()
-        row_ = self.validate_range(
+        row_ = validate_range(
             self.row_col_ranges_dict["min_row"],
             self.row_col_ranges_dict["max_row"],
             self.worksheet.max_row,
@@ -105,7 +106,7 @@ class TableRanges(WorkSheet):
             table_ranges_dict["min_row"], table_ranges_dict["max_row"] = row_
         else:
             return
-        col_ = self.validate_range(
+        col_ = validate_range(
             self.row_col_ranges_dict["min_column"],
             self.row_col_ranges_dict["max_column"],
             self.worksheet.max_column,
