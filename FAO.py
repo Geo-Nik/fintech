@@ -59,23 +59,23 @@ class Work_Book:
         return workbook
 
 
-class WorkSheet(Work_Book):
-    def __init__(self, path, worksheet_name=None):
+class WorkSheet:
+    def __init__(self, workbook_obj, worksheet_name=None):
         self.worksheet_name = worksheet_name
-        super().__init__(path)
+        self.workbook_obj = workbook_obj
 
     def read_worksheet(self):
-        workbook = self.load()
-        if not workbook:
+        self.workbook = self.workbook_obj.load()
+        if not self.workbook:
             return
         if self.worksheet_name:
             try:
-                worksheet = workbook[self.worksheet_name]
+                worksheet = self.workbook[self.worksheet_name]
             except KeyError as err:
                 logging.error(f"KeyError:{err}")
                 return
         else:
-            worksheet = workbook.active
+            worksheet = self.workbook.active
         return worksheet
 
 
@@ -153,21 +153,18 @@ class TableRanges:
             return {'row': row_range_dict, 'col': col_range_dict}
 
 
-class TableData(WorkSheet):
-    def __init__(
-        self, path, worksheet_name=None, row_col_ranges_dict: dict = None
-            ):
-        self.path = path
+class TableData:
+    def __init__(self, worksheet_obj, row_col_ranges_dict: dict = None):
         self.row_col_ranges_dict = row_col_ranges_dict
-        super().__init__(path, worksheet_name)
+        self.worksheet_obj = worksheet_obj
 
     def get_data_from_worksheet(self):
-        worksheet = self.read_worksheet()
+        worksheet = self.worksheet_obj.read_worksheet()
         if not worksheet:
             return
 
-        worksheet_ranges_instance = TableRanges(worksheet, row_col_ranges_dict)
-        worksheet_ranges = worksheet_ranges_instance.get_ranges()
+        worksheet_ranges_obj = TableRanges(worksheet, self.row_col_ranges_dict)
+        worksheet_ranges = worksheet_ranges_obj.get_ranges()
         if not worksheet_ranges:
             return
         worksheet_iterator = worksheet.iter_rows(
@@ -191,8 +188,9 @@ class TableData(WorkSheet):
 
 if __name__ == "__main__":
     path = "data/accounts.xlsx"
-    worksheet_instance = WorkSheet(path).read_worksheet()
-    row_col_ranges_dict = {} #{"min_row": 1, "max_row": 5, "min_col": 1, "max_col": 3}
-    table_ranges_instance = TableRanges(worksheet_instance, row_col_ranges_dict)
-    table_data_instance = TableData(path)
-    print(table_data_instance.get_data_from_worksheet())
+    workbook_obj = Work_Book(path)
+    worksheet_obj = WorkSheet(workbook_obj)
+    data_object = TableData(worksheet_obj)
+    data = data_object.get_data_from_worksheet()
+    print(data)
+
