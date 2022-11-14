@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
-from FAO import Data as FileData
+import FAO
 from URL import URL
 import logging
 
@@ -34,13 +34,13 @@ class BsDocument:
                 return None
 
 
-class Restrictions(BsDocument):
-    def __init__(self, url):
-        super().__init__(url)
+class Restrictions:
+    def __init__(self, bs_document_obj):
+        self.bs_document_obj = bs_document_obj
 
     def get_div_with_restrictions(self):
         restrictions_class_name = "BoiRestrictedAccountsRestricted"
-        bs_document = self.get_bs_document()
+        bs_document = self.bs_document_obj.get_bs_document()
         if bs_document:
             list_of_divs = bs_document.find_all(class_=restrictions_class_name)
             # The documents have only one div with such class.
@@ -61,19 +61,19 @@ class Restrictions(BsDocument):
             return restricted_date
 
 
-class DataUpdater(Restrictions, FileData):
-    def __init__(self, path_to_data_file):
-        self.path_to_data_file = path_to_data_file
-        FileData.__init__(self, path_to_data_file)
+class DataUpdater(Restrictions):
+    def __init__(self, data: FAO.TableData):
+        self.data_obj = data
 
     def update_data_dict(self):
-        input_account_data_list = self.get_data_from_worksheet()
+        input_account_data_list = self.data_obj.get_data_from_worksheet()
         output_account_data_list = []
         if input_account_data_list:
             for input_account_data in input_account_data_list:
-                account_url_instance = URL(input_account_data)
-                account_url = account_url_instance.get_url()
-                restrictions_instance = Restrictions(account_url)
+                account_url_obj = URL(input_account_data)
+                account_url = account_url_obj.get_url()
+                bs_document_obj = BsDocument(account_url)
+                restrictions_instance = Restrictions(bs_document_obj)
                 restrictions_date = restrictions_instance.get_restricted_date()
                 if restrictions_date:
                     input_account_data["isrestricted"] = True
@@ -89,4 +89,10 @@ class DataUpdater(Restrictions, FileData):
 
 
 if __name__ == "__main__":
-    pass
+    path = "data/accounts.xlsx"
+    workbook_obj = FAO.Work_Book(path)
+    worksheet_obj = FAO.WorkSheet(workbook_obj)
+    data_object = FAO.TableData(worksheet_obj)
+    updatet_data_obj = DataUpdater(data_object)
+    updated_data = updatet_data_obj.update_data_dict()
+    print(updated_data)
